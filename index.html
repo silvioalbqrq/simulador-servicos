@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador Tributário TI - Simples Nacional (Res. CGSN 140/2018) 2027-2032</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,sans-serif}
+  body{background:linear-gradient(135deg,#1e3c72 0%,#2a5298 100%);min-height:100vh;padding:20px;color:#333}
+  .container{max-width:1500px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
+  header{background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);color:#fff;padding:30px;text-align:center}
+  header h1{font-size:1.7rem;margin-bottom:8px}
+  header p{opacity:.85;font-size:.9rem}
+  .content{padding:30px}
+  .inputs-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:18px}
+  .inputs-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
+  .input-group{display:flex;flex-direction:column}
+  .input-group label{font-weight:600;margin-bottom:4px;color:#2c5364;font-size:.82rem}
+  .input-group input,.input-group select{padding:8px 10px;border:2px solid #e0e6ed;border-radius:8px;font-size:.92rem;transition:border .2s}
+  .input-group input:focus,.input-group select:focus{outline:none;border-color:#2a5298}
+  .section-title{font-size:1.15rem;color:#0f2027;margin:22px 0 12px;padding-bottom:7px;border-bottom:3px solid #2a5298}
+  .subsection-title{font-size:.95rem;color:#203a43;margin:12px 0 8px;padding-left:10px;border-left:3px solid #11998e}
+  .despesa-block{background:#f8fafc;border:1px solid #e0e6ed;border-radius:10px;padding:14px;margin-bottom:14px}
+  .despesa-block h4{color:#2c5364;margin-bottom:9px;font-size:.92rem}
+  .info-box{background:#fff8e1;border-left:4px solid #f7971e;padding:11px 14px;margin:12px 0;border-radius:6px;font-size:.85rem;line-height:1.5}
+  .info-box strong{color:#bf6900}
+  .info-box-green{background:#e8f5e9;border-left:4px solid #11998e;padding:11px 14px;margin:12px 0;border-radius:6px;font-size:.85rem;line-height:1.5}
+  .info-box-green strong{color:#0d7a5f}
+  .info-box-red{background:#fce4ec;border-left:4px solid #ee0979;padding:11px 14px;margin:12px 0;border-radius:6px;font-size:.85rem;line-height:1.5}
+  .info-box-red strong{color:#c2185b}
+  .info-box-blue{background:#e3f2fd;border-left:4px solid #2a5298;padding:11px 14px;margin:12px 0;border-radius:6px;font-size:.85rem;line-height:1.5}
+  .info-box-blue strong{color:#0f2027}
+  .btn{background:linear-gradient(135deg,#11998e,#38ef7d);color:#fff;border:none;padding:13px 28px;font-size:1rem;font-weight:700;border-radius:8px;cursor:pointer;width:100%;margin-top:14px;transition:transform .2s,box-shadow .2s}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(17,153,142,.4)}
+  .results{margin-top:28px;display:none}
+  .results.show{display:block}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-bottom:22px}
+  .card{border-radius:12px;padding:20px;color:#fff;position:relative;overflow:hidden}
+  .card h3{font-size:1rem;margin-bottom:9px}
+  .card .total{font-size:1.8rem;font-weight:800;margin:7px 0}
+  .card .detail{font-size:.82rem;opacity:.95;margin:2px 0}
+  .card .credit{font-size:.82rem;background:rgba(255,255,255,.2);padding:5px 9px;border-radius:6px;margin-top:7px}
+  .card.simples{background:linear-gradient(135deg,#11998e,#38ef7d)}
+  .card.hibrido{background:linear-gradient(135deg,#f7971e,#ffd200);color:#333}
+  .card.hibrido .credit{background:rgba(0,0,0,.1)}
+  .card.presumido{background:linear-gradient(135deg,#ee0979,#ff6a00)}
+  .badge{position:absolute;top:9px;right:9px;background:rgba(255,255,255,.3);padding:3px 9px;border-radius:12px;font-size:.72rem;font-weight:700}
+  .badge.winner{background:#fff;color:#11998e}
+  .badge.nocredit{background:rgba(0,0,0,.3);color:#fff}
+  table{width:100%;border-collapse:collapse;margin-top:12px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.08);font-size:.82rem}
+  th,td{padding:8px 9px;text-align:right;border-bottom:1px solid #e0e6ed}
+  th{background:#2c5364;color:#fff;text-align:right;font-weight:600;font-size:.75rem}
+  th:first-child,td:first-child{text-align:left}
+  tr:nth-child(even){background:#f8fafc}
+  tr.total-row{background:#e8f4f8!important;font-weight:700}
+  tr.subtotal-row{background:#f0f7fa!important;font-weight:600;font-style:italic}
+  tr.faixa-row{background:#fff3cd!important;font-weight:700}
+  .table-simples th{background:#11998e}
+  .table-hibrido th{background:#f7971e;color:#333}
+  .table-presumido th{background:#ee0979}
+  .table-creditos th{background:#2a5298}
+  .table-comparativo th{background:#0f2027}
+  .table-partilha th{background:#5c2d91}
+  .winner-box{background:linear-gradient(135deg,#11998e,#38ef7d);color:#fff;padding:18px;border-radius:12px;margin-top:18px;text-align:center}
+  .winner-box h2{font-size:1.3rem;margin-bottom:7px}
+  .analysis{background:#f8fafc;border-left:4px solid #2a5298;padding:16px;margin-top:18px;border-radius:8px;font-size:.92rem;line-height:1.6}
+  .analysis strong{color:#0f2027}
+  .regime-block{margin:22px 0;border:2px solid #e0e6ed;border-radius:12px;overflow:hidden}
+  .regime-header{padding:13px 18px;color:#fff;font-size:1.05rem;font-weight:700}
+  .regime-header.simples{background:linear-gradient(135deg,#11998e,#38ef7d)}
+  .regime-header.hibrido{background:linear-gradient(135deg,#f7971e,#ffd200);color:#333}
+  .regime-header.presumido{background:linear-gradient(135deg,#ee0979,#ff6a00)}
+  .regime-body{padding:14px}
+  .fator-r-box{border:2px solid #2a5298;border-radius:12px;padding:18px;margin:12px 0;background:#f0f4ff}
+  .fator-r-box h3{color:#0f2027;margin-bottom:10px;font-size:1.05rem}
+  .fator-r-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+  .fator-r-item{text-align:center;padding:10px;background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+  .fator-r-item .label{font-size:.77rem;color:#666;margin-bottom:3px}
+  .fator-r-item .value{font-size:1.2rem;font-weight:800;color:#0f2027}
+  .fator-r-item .value.green{color:#11998e}
+  .fator-r-item .value.red{color:#ee0979}
+  .fator-r-item .value.orange{color:#f7971e}
+  .timeline{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:12px 0}
+  .timeline-item{background:#f8fafc;border:2px solid #e0e6ed;border-radius:8px;padding:10px;text-align:center;font-size:.78rem;cursor:pointer;transition:all .2s}
+  .timeline-item:hover{transform:translateY(-2px)}
+  .timeline-item.active{background:#e3f2fd;border-color:#2a5298}
+  .timeline-item .year{font-weight:800;color:#0f2027;font-size:.95rem;margin-bottom:3px}
+  .timeline-item .desc{color:#555;line-height:1.25;font-size:.72rem}
+  .faixa-indicator{display:inline-block;padding:4px 10px;border-radius:12px;font-size:.78rem;font-weight:700;margin:2px}
+  .faixa-indicator.atual{background:#11998e;color:#fff}
+  .footer-note{text-align:center;font-size:.77rem;color:#666;margin-top:22px;font-style:italic}
+  .highlight{color:#11998e;font-weight:700}
+  .negative{color:#ee0979}
+  .tributo-cell{font-size:.78rem}
+  @media(max-width:900px){
+    header h1{font-size:1.2rem}
+    .content{padding:16px}
+    .card .total{font-size:1.3rem}
+    table{font-size:.7rem}
+    th,td{padding:5px 5px}
+    .inputs-grid-3{grid-template-columns:1fr}
+    .fator-r-grid{grid-template-columns:1fr 1fr}
+    .timeline{grid-template-columns:1fr 1fr 1fr}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1> Simulador Tributário TI - Simples Nacional</h1>
+    <p>Resolução CGSN Nº 140/2018 · Reforma Tributária (EC 132/2023) · Anexo III e V</p>
+    <p style="margin-top:6px;font-size:.82rem;">Partilha oficial CBS/IBS/ISS/CPP · Transição 2027-2032</p>
+  </header>
+
+  <div class="content">
+
+    <!-- TIMELINE -->
+    <h2 class="section-title">📅 Cronograma da Reforma - Selecione o Ano de Apuração</h2>
+    <div class="info-box-blue">
+      <strong>📌 Base legal:</strong> Resolução CGSN Nº 140/2018 (alterada pela EC 132/2023). A CBS substitui PIS/COFINS. O ISS reduz gradualmente (5%→3%) e o IBS aumenta (0,17%→13,40%) até 2032.
+    </div>
+    <div class="timeline" id="timeline"></div>
+
+    <!-- FATOR R -->
+    <h2 class="section-title">📐 Análise do Fator R (Anexo III vs Anexo V)</h2>
+    <div class="info-box">
+      <strong>💡 Fator R:</strong> Razão entre folha de pagamento (incluindo pró-labore) e receita bruta dos <strong>últimos 12 meses</strong>. Se ≥ 28% → Anexo III. Se &lt; 28% → Anexo V.
+    </div>
+    <div class="inputs-grid">
+      <div class="input-group">
+        <label>Receita Bruta últimos 12 meses (R$)</label>
+        <input type="number" id="receita12" value="129500" step="100">
+      </div>
+      <div class="input-group">
+        <label>Folha + Pró-labore últimos 12 meses (R$)</label>
+        <input type="number" id="folha12" value="4500" step="100">
+      </div>
+      <div class="input-group">
+        <label>Limite Fator R (%)</label>
+        <input type="number" id="fatorR" value="28" step="0.1">
+      </div>
+    </div>
+    <div id="fatorRBox" class="fator-r-box"></div>
+
+    <!-- DADOS DE ENTRADA -->
+    <h2 class="section-title">📋 Dados de Entrada - Faturamento e Folha Mensal</h2>
+    <div class="inputs-grid">
+      <div class="input-group"><label>Faturamento Janeiro (R$)</label><input type="number" id="fat1" value="35000" step="100"></div>
+      <div class="input-group"><label>Faturamento Fevereiro (R$)</label><input type="number" id="fat2" value="45000" step="100"></div>
+      <div class="input-group"><label>Faturamento Março (R$)</label><input type="number" id="fat3" value="49500" step="100"></div>
+      <div class="input-group"><label>Folha Funcionários (R$)</label><input type="number" id="folhaFunc" value="1500" step="100"></div>
+      <div class="input-group"><label>Pró-labore (R$)</label><input type="number" id="proLabore" value="0" step="100"></div>
+      <div class="input-group"><label>Nº Funcionários</label><input type="number" id="numFunc" value="0" step="1"></div>
+    </div>
+
+    <!-- COMPRAS E DESPESAS -->
+    <h2 class="section-title"> Compras e Despesas (Créditos CBS/IBS) - Mensais</h2>
+    <div class="info-box">
+      <strong>💡 Créditos CBS/IBS:</strong> Simples Híbrido (Fator R) e Lucro Presumido permitem créditos não-cumulativos. Simples Puro (Anexo V) não permite. Cálculo "por fora" do ICMS embutido.
+    </div>
+
+    <div class="despesa-block">
+      <h4>📦 Compras - Regime Regular (mensal)</h4>
+      <div class="inputs-grid-3">
+        <div class="input-group"><label>Janeiro (R$)</label><input type="number" id="comprasRR1" value="0" step="100"></div>
+        <div class="input-group"><label>Fevereiro (R$)</label><input type="number" id="comprasRR2" value="0" step="100"></div>
+        <div class="input-group"><label>Março (R$)</label><input type="number" id="comprasRR3" value="0" step="100"></div>
+      </div>
+    </div>
+    <div class="despesa-block">
+      <h4>📦 Compras - Simples Nacional (mensal)</h4>
+      <div class="inputs-grid-3">
+        <div class="input-group"><label>Janeiro (R$)</label><input type="number" id="comprasSN1" value="0" step="100"></div>
+        <div class="input-group"><label>Fevereiro (R$)</label><input type="number" id="comprasSN2" value="0" step="100"></div>
+        <div class="input-group"><label>Março (R$)</label><input type="number" id="comprasSN3" value="0" step="100"></div>
+      </div>
+    </div>
+    <div class="despesa-block">
+      <h4>💼 Despesas Operacionais - Regime Regular (mensal)</h4>
+      <div class="inputs-grid-3">
+        <div class="input-group"><label>Janeiro (R$)</label><input type="number" id="despesasRR1" value="0" step="100"></div>
+        <div class="input-group"><label>Fevereiro (R$)</label><input type="number" id="despesasRR2" value="0" step="100"></div>
+        <div class="input-group"><label>Março (R$)</label><input type="number" id="despesasRR3" value="0" step="100"></div>
+      </div>
+    </div>
+    <div class="despesa-block">
+      <h4>💼 Despesas Operacionais - Simples Nacional (mensal)</h4>
+      <div class="inputs-grid-3">
+        <div class="input-group"><label>Janeiro (R$)</label><input type="number" id="despesasSN1" value="0" step="100"></div>
+        <div class="input-group"><label>Fevereiro (R$)</label><input type="number" id="despesasSN2" value="0" step="100"></div>
+        <div class="input-group"><label>Março (R$)</label><input type="number" id="despesasSN3" value="0" step="100"></div>
+      </div>
+    </div>
+
+    <!-- ALÍQUOTAS GERAIS -->
+    <h2 class="section-title">⚙️ Alíquotas Gerais</h2>
+    <div class="inputs-grid">
+      <div class="input-group"><label>INSS Patronal LP (%)</label><input type="number" id="inssPat" value="20" step="0.1"></div>
+      <div class="input-group"><label>Alíquota Crédito Reg. Regular (%)</label><input type="number" id="alCredRR" value="20" step="0.1"></div>
+      <div class="input-group"><label>Alíquota Crédito Simples Nac. (%)</label><input type="number" id="alCredSN" value="2" step="0.1"></div>
+    </div>
+
+    <button class="btn" onclick="calcular()"> Calcular Simulação Detalhada</button>
+
+    <div class="results" id="results">
+      <h2 class="section-title"> Resultado Comparativo (Resumo)</h2>
+      <div class="cards" id="cards"></div>
+
+      <!-- PARTILHA OFICIAL -->
+      <div class="regime-block">
+        <div class="regime-header" style="background:linear-gradient(135deg,#5c2d91,#8e44ad)">📊 Partilha Oficial do Anexo III - <span id="anoPartilha"></span> (Res. CGSN 140/2018)</div>
+        <div class="regime-body">
+          <div id="tabelaPartilha"></div>
+        </div>
+      </div>
+
+      <!-- REGIME 1 -->
+      <div class="regime-block">
+        <div class="regime-header simples">💚 Regime 1: Simples Nacional Puro (Anexo V) - Partilha Anexo V</div>
+        <div class="regime-body"><div id="tabelaSimples"></div></div>
+      </div>
+
+      <!-- REGIME 2 -->
+      <div class="regime-block">
+        <div class="regime-header hibrido"> Regime 2: Simples Nacional Híbrido (Fator R → Anexo III) - Partilha Anexo III</div>
+        <div class="regime-body"><div id="tabelaHibrido"></div></div>
+      </div>
+
+      <!-- REGIME 3 -->
+      <div class="regime-block">
+        <div class="regime-header presumido">🔴 Regime 3: Lucro Presumido (CBS + ISS + IBS)</div>
+        <div class="regime-body"><div id="tabelaPresumido"></div></div>
+      </div>
+
+      <!-- CRÉDITOS -->
+      <h2 class="section-title"> Detalhamento de Créditos CBS/IBS (Mensal)</h2>
+      <div id="tabelaCreditos"></div>
+
+      <!-- COMPARATIVO -->
+      <h2 class="section-title">📊 Comparativo Final - Totais do Trimestre</h2>
+      <div id="tabelaComparativo"></div>
+
+      <div id="winner"></div>
+      <div id="analysis" class="analysis"></div>
+    </div>
+
+    <p class="footer-note">
+      * Simulação baseada na Resolução CGSN Nº 140/2018 (alterada pela EC 132/2023). Partilha oficial do Anexo III conforme prints anexados.
+      Anexo V adaptado com CBS substituindo PIS/COFINS. Consulte um contador para análise personalizada.
+    </p>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DADOS OFICIAIS - RESOLUÇÃO CGSN Nº 140/2018 (ALTERADA EC 132/2023)
+// ============================================================
+
+const DADOS_ANO = {
+  2027: {
+    label: "2027-2028",
+    desc: "ISS máx 5% · IBS 0,17%",
+    faixas: [
+      {lim:180000, aliq:6.00, vd:0},
+      {lim:360000, aliq:11.20, vd:9360},
+      {lim:720000, aliq:13.50, vd:17640},
+      {lim:1800000, aliq:16.00, vd:35640},
+      {lim:3600000, aliq:21.00, vd:125640},
+      {lim:4800000, aliq:32.50, vd:648000}
+    ],
+    reparticao: [
+      {irpj:4.00, csll:3.50, cbs:15.43, cpp:43.40, iss:33.50, ibs:0.17},
+      {irpj:4.00, csll:3.50, cbs:16.91, cpp:43.40, iss:32.00, ibs:0.19},
+      {irpj:4.00, csll:3.50, cbs:16.41, cpp:43.40, iss:32.50, ibs:0.19},
+      {irpj:4.00, csll:3.50, cbs:16.41, cpp:43.40, iss:32.50, ibs:0.19},
+      {irpj:4.00, csll:3.50, cbs:15.43, cpp:43.40, iss:33.50, ibs:0.17},
+      {irpj:35.09, csll:15.04, cbs:19.29, cpp:30.58, iss:0, ibs:0}
+    ],
+    issMax: 5.00,
+    issFixo5a: 5.00,
+    aliqLimite5a: 14.92537
+  },
+  2029: {
+    label: "2029",
+    desc: "ISS máx 4,5% · IBS 3,20-3,35%",
+    faixas: [
+      {lim:180000, aliq:6.00, vd:0},
+      {lim:360000, aliq:11.20, vd:9360},
+      {lim:720000, aliq:13.50, vd:17640},
+      {lim:1800000, aliq:16.00, vd:35640},
+      {lim:3600000, aliq:21.00, vd:125640},
+      {lim:4800000, aliq:33.00, vd:648000}
+    ],
+    reparticao: [
+      {irpj:4.00, csll:3.50, cbs:15.60, cpp:43.40, iss:30.15, ibs:3.35},
+      {irpj:4.00, csll:3.50, cbs:17.10, cpp:43.40, iss:28.80, ibs:3.20},
+      {irpj:4.00, csll:3.50, cbs:16.60, cpp:43.40, iss:29.25, ibs:3.25},
+      {irpj:4.00, csll:3.50, cbs:16.60, cpp:43.40, iss:29.25, ibs:3.25},
+      {irpj:4.00, csll:3.50, cbs:15.60, cpp:43.40, iss:30.15, ibs:3.35},
+      {irpj:35.00, csll:15.00, cbs:19.50, cpp:30.50, iss:0, ibs:0}
+    ],
+    issMax: 4.50,
+    issFixo5a: 4.50,
+    aliqLimite5a: 14.92537
+  },
+  2030: {
+    label: "2030",
+    desc: "ISS máx 4% · IBS 6,40-6,70%",
+    faixas: [
+      {lim:180000, aliq:6.00, vd:0},
+      {lim:360000, aliq:11.20, vd:9360},
+      {lim:720000, aliq:13.50, vd:17640},
+      {lim:1800000, aliq:16.00, vd:35640},
+      {lim:3600000, aliq:21.00, vd:125640},
+      {lim:4800000, aliq:33.00, vd:648000}
+    ],
+    reparticao: [
+      {irpj:4.00, csll:3.50, cbs:15.60, cpp:43.40, iss:26.80, ibs:6.70},
+      {irpj:4.00, csll:3.50, cbs:17.10, cpp:43.40, iss:25.60, ibs:6.40},
+      {irpj:4.00, csll:3.50, cbs:16.60, cpp:43.40, iss:26.00, ibs:6.50},
+      {irpj:4.00, csll:3.50, cbs:16.60, cpp:43.40, iss:26.00, ibs:6.50},
+      {irpj:4.00, csll:3.50, cbs:15.60, cpp:43.40, iss:26.80, ibs:6.70},
+      {irpj:35.00, csll:15.00, cbs:19.50, cpp:30.50, iss:0, ibs:0}
+    ],
+    issMax: 4.00,
+    issFixo5a: 4.00,
+    aliqLimite5a: 14.92537
+  },
+  2031: {
+    label: "2031",
+    desc: "ISS máx 3,5% · IBS 9,60-10,05%",
+    faixas: [
+      {lim:180000, aliq:6.00, vd:0},
+      {lim:360000, aliq:11.20, vd:9360},
+      {lim:720000, aliq:13.50, vd:17640},
+      {lim:1800000, aliq:16.00, vd:35640},
+      {lim:3600000, aliq:21.00, vd:125640},
+      {lim:4800000, aliq:33.00, vd:648000}
+    ],
+    reparticao: [
+      {irpj:4.00, csll:3.50, cbs:15.60, cpp:43.40, iss:23.45, ibs:10.05},
+      {irpj:4.00, csll:3.50, cbs:17.10, cpp:43.40, iss:22.40, ibs:9.60},
+      {irpj:4.00, csll:3.50, cbs:16.60, cpp:43.40, iss:22.75, ibs:9.75},
+      {irpj:4.00, csll:3.50, cbs:16.60, cpp:43.40, iss:22.75, ibs:9.75},
+      {irpj:4.00, csll:3.50, cbs:15.60, cpp:43.40, iss:23.45, ibs:10.05},
+      {irpj:35.00, csll:15.00, cbs:19.50, cpp:30.50, iss:0, ibs:0}
+    ],
+    issMax: 3.50,
+    issFixo5a: 3.50,
+    aliqLimite5a: 14.92537
+  },
+  2032: {
+    label: "2032",
+    desc: "ISS máx 3% · IBS 12,80-13,40%",
+    faixas: [
+      {lim:180000, aliq:6.00, vd:0},
+      {lim:360000, aliq:11.20, vd:9360},
+      {lim:720000, aliq:13.50, vd:17640},
+      {lim:1800000, aliq:16.00, vd:35640},
+      {lim:3600000, aliq:21.00, vd:125640},
+      {lim:4800000, aliq:33.00, vd:648000}
+    ],
+    reparticao: [
+      {irpj:4.00, csll:3.50, cbs:15.60, cpp:43.40, iss:20.10, ibs:13.40},
+      {irpj:4.00, csll:3.50, cbs:17.10, cpp:43.40, iss:19.20, ibs:12.80},
+      {irpj:4.00, csll:3.50, cbs:16.60, cpp:43.40, iss:19.50, ibs:13.00},
+      {irpj:4.00, csll:3.50, cbs:16.60, cpp:43.40, iss:19.50, ibs:13.00},
+      {irpj:4.00, csll:3.50, cbs:15.60, cpp:43.40, iss:20.10, ibs:13.40},
+      {irpj:35.00, csll:15.00, cbs:19.50, cpp:30.50, iss:0, ibs:0}
+    ],
+    issMax: 3.00,
+    issFixo5a: 3.00,
+    aliqLimite5a: 14.92537
+  }
+};
+
+// ANEXO V - Adaptado com CBS substituindo PIS/COFINS (base LC 123/2006 + EC 132/2023)
+const ANEXO_V = {
+  faixas: [
+    {lim:180000, aliq:15.50, vd:0},
+    {lim:360000, aliq:18.20, vd:4860},
+    {lim:720000, aliq:19.50, vd:10260},
+    {lim:1800000, aliq:20.50, vd:17460},
+    {lim:3600000, aliq:21.50, vd:35460},
+    {lim:4800000, aliq:23.00, vd:89460}
+  ],
+  // Repartição adaptada: CBS substitui PIS+COFINS (somados ~38,30% nas faixas 1-5)
+  reparticao: [
+    {irpj:17.50, csll:13.50, cbs:38.30, cpp:13.50, iss:17.20, ibs:0},
+    {irpj:17.50, csll:13.50, cbs:38.30, cpp:13.50, iss:17.20, ibs:0},
+    {irpj:17.50, csll:13.50, cbs:38.30, cpp:13.50, iss:17.20, ibs:0},
+    {irpj:17.50, csll:13.50, cbs:38.30, cpp:13.50, iss:17.20, ibs:0},
+    {irpj:17.50, csll:13.50, cbs:38.30, cpp:13.50, iss:17.20, ibs:0},
+    {irpj:35.00, csll:15.00, cbs:19.50, cpp:30.50, iss:0, ibs:0}
+  ]
+};
+
+let anoSelecionado = 2027;
+
+function fmt(v){return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
+function pct(v){return(v*100).toFixed(2)+'%'}
+function pct2(v){return(v).toFixed(2)+'%'}
+function calcularCredito(valor,aliquotaIcms){if(valor<=0)return 0;return(valor/(1+aliquotaIcms))*aliquotaIcms}
+
+// Determina faixa e calcula alíquota efetiva + repartição
+function calcularFaixa(rbt12, dadosAno){
+  let faixaIdx = 0;
+  for(let i=0;i<dadosAno.faixas.length;i++){
+    if(rbt12 <= dadosAno.faixas[i].lim){faixaIdx=i;break;}
+    if(i===dadosAno.faixas.length-1) faixaIdx=i;
+  }
+  const f = dadosAno.faixas[faixaIdx];
+  const aliqEfetiva = ((rbt12 * f.aliq/100) - f.vd) / rbt12 * 100;
+  const rep = {...dadosAno.reparticao[faixaIdx]};
+  
+  // Regra especial 5ª faixa: se aliq efetiva > 14,92537%, ISS fica fixo no máximo
+  let issFixoAplicado = false;
+  if(faixaIdx === 4 && aliqEfetiva > dadosAno.aliqLimite5a){
+    // ISS fixo no máximo, diferença proporcional para federais
+    const diff = aliqEfetiva - dadosAno.aliqLimite5a;
+    const totalFederal = rep.irpj + rep.csll + rep.cbs + rep.cpp;
+    rep.irpj = rep.irpj + (diff * rep.irpj/totalFederal);
+    rep.csll = rep.csll + (diff * rep.csll/totalFederal);
+    rep.cbs = rep.cbs + (diff * rep.cbs/totalFederal);
+    rep.cpp = rep.cpp + (diff * rep.cpp/totalFederal);
+    rep.iss = 0; // será calculado como fixo
+    issFixoAplicado = true;
+  }
+  
+  return {faixaIdx, aliqEfetiva, reparticao: rep, issFixoAplicado, faixa: f};
+}
+
+function initTimeline(){
+  const tl = document.getElementById('timeline');
+  const anos = Object.keys(DADOS_ANO).map(Number);
+  tl.innerHTML = anos.map(a=>`
+    <div class="timeline-item ${a===anoSelecionado?'active':''}" onclick="selecionarAno(${a})">
+      <div class="year">${DADOS_ANO[a].label}</div>
+      <div class="desc">${DADOS_ANO[a].desc}</div>
+    </div>
+  `).join('');
+}
+
+function selecionarAno(a){
+  anoSelecionado = a;
+  initTimeline();
+  if(document.getElementById('results').classList.contains('show')) calcular();
+}
+
+function atualizarFatorR(){
+  const receita12=parseFloat(document.getElementById('receita12').value)||0;
+  const folha12=parseFloat(document.getElementById('folha12').value)||0;
+  const limiteR=parseFloat(document.getElementById('fatorR').value)||28;
+  const fatorR=receita12>0?(folha12/receita12)*100:0;
+  const anexoIII=fatorR>=limiteR;
+  const folhaNecessaria=receita12*(limiteR/100);
+  const faltaFolha=Math.max(0,folhaNecessaria-folha12);
+
+  let html=`<h3>📐 Resultado do Fator R (últimos 12 meses)</h3><div class="fator-r-grid">
+    <div class="fator-r-item"><div class="label">Receita Bruta 12 meses</div><div class="value">${fmt(receita12)}</div></div>
+    <div class="fator-r-item"><div class="label">Folha + Pró-labore 12 meses</div><div class="value">${fmt(folha12)}</div></div>
+    <div class="fator-r-item"><div class="label">Fator R Calculado</div><div class="value ${anexoIII?'green':'red'}">${fatorR.toFixed(2)}%</div></div>
+    <div class="fator-r-item"><div class="label">Limite Mínimo</div><div class="value">${limiteR.toFixed(1)}%</div></div>
+    <div class="fator-r-item"><div class="label">Enquadramento Atual</div><div class="value ${anexoIII?'green':'red'}">${anexoIII?'✅ ANEXO III':'️ ANEXO V'}</div></div>
+    <div class="fator-r-item"><div class="label">Folha necessária p/ Anexo III</div><div class="value orange">${fmt(folhaNecessaria)}</div></div>
+  </div>`;
+
+  if(!anexoIII){
+    html+=`<div class="info-box-red" style="margin-top:12px">
+      <strong>⚠️ Empresa no Anexo V:</strong> Fator R de <strong>${fatorR.toFixed(2)}%</strong> abaixo do limite de ${limiteR.toFixed(1)}%.<br>
+      <strong>Para migrar ao Anexo III:</strong> Aumentar folha em <strong>${fmt(faltaFolha)}</strong> nos últimos 12 meses (atingindo ${fmt(folhaNecessaria)}).<br>
+      <strong>Exemplo:</strong> Pró-labore mensal de <strong>${fmt(folhaNecessaria/12)}</strong>/mês atingiria o limite.
+    </div>`;
+  } else {
+    html+=`<div class="info-box-green" style="margin-top:12px">
+      <strong>✅ Empresa no Anexo III:</strong> Fator R de <strong>${fatorR.toFixed(2)}%</strong> atende ao limite de ${limiteR.toFixed(1)}%.<br>
+      <strong>Margem de segurança:</strong> Folha pode cair em até <strong>${fmt(folha12-folhaNecessaria)}</strong> antes de migrar para o Anexo V.
+    </div>`;
+  }
+  document.getElementById('fatorRBox').innerHTML=html;
+}
+
+document.getElementById('receita12').addEventListener('input',atualizarFatorR);
+document.getElementById('folha12').addEventListener('input',atualizarFatorR);
+document.getElementById('fatorR').addEventListener('input',atualizarFatorR);
+
+function calcular(){
+  atualizarFatorR();
+  const dadosAno = DADOS_ANO[anoSelecionado];
+  document.getElementById('anoPartilha').textContent = dadosAno.label;
+
+  const fat=[
+    parseFloat(document.getElementById('fat1').value)||0,
+    parseFloat(document.getElementById('fat2').value)||0,
+    parseFloat(document.getElementById('fat3').value)||0
+  ];
+  const folhaFunc=parseFloat(document.getElementById('folhaFunc').value)||0;
+  const proLabore=parseFloat(document.getElementById('proLabore').value)||0;
+  const inssPat=parseFloat(document.getElementById('inssPat').value)/100;
+  const alCredRR=parseFloat(document.getElementById('alCredRR').value)/100;
+  const alCredSN=parseFloat(document.getElementById('alCredSN').value)/100;
+
+  // RBT12 para determinação de faixa (média dos 3 meses × 4, ou valor informado)
+  const rbt12 = fat.reduce((a,b)=>a+b,0) * 4; // projeção anual baseada no trimestre
+
+  const comprasRR=[
+    parseFloat(document.getElementById('comprasRR1').value)||0,
+    parseFloat(document.getElementById('comprasRR2').value)||0,
+    parseFloat(document.getElementById('comprasRR3').value)||0
+  ];
+  const comprasSN=[
+    parseFloat(document.getElementById('comprasSN1').value)||0,
+    parseFloat(document.getElementById('comprasSN2').value)||0,
+    parseFloat(document.getElementById('comprasSN3').value)||0
+  ];
+  const despesasRR=[
+    parseFloat(document.getElementById('despesasRR1').value)||0,
+    parseFloat(document.getElementById('despesasRR2').value)||0,
+    parseFloat(document.getElementById('despesasRR3').value)||0
+  ];
+  const despesasSN=[
+    parseFloat(document.getElementById('despesasSN1').value)||0,
+    parseFloat(document.getElementById('despesasSN2').value)||0,
+    parseFloat(document.getElementById('despesasSN3').value)||0
+  ];
+
+  const creditoMensal=[];
+  for(let i=0;i<3;i++){
+    const cRR=calcularCredito(comprasRR[i],alCredRR);
+    const cSN=calcularCredito(comprasSN[i],alCredSN);
+    const dRR=calcularCredito(despesasRR[i],alCredRR);
+    const dSN=calcularCredito(despesasSN[i],alCredSN);
+    creditoMensal.push({comprasRR:cRR,comprasSN:cSN,despesasRR:dRR,despesasSN:dSN,total:cRR+cSN+dRR+dSN});
+  }
+  const creditoTotalTrimestre=creditoMensal.reduce((a,c)=>a+c.total,0);
+
+  const folhaBase=folhaFunc+proLabore;
+  const meses=['Janeiro','Fevereiro','Março'];
+
+  // CÁLCULO ANEXO III (Híbrido) - com partilha oficial
+  const calcAnexoIII = (faturamento) => {
+    const {faixaIdx, aliqEfetiva, reparticao, issFixoAplicado, faixa} = calcularFaixa(rbt12, dadosAno);
+    const das = faturamento * aliqEfetiva/100;
+    return {
+      faixaIdx, aliqEfetiva, das,
+      irpj: das * reparticao.irpj/100,
+      csll: das * reparticao.csll/100,
+      cbs: das * reparticao.cbs/100,
+      cpp: das * reparticao.cpp/100,
+      iss: issFixoAplicado ? (faturamento * dadosAno.issFixo5a/100) : (das * reparticao.iss/100),
+      ibs: das * reparticao.ibs/100,
+      issFixoAplicado
+    };
+  };
+
+  // CÁLCULO ANEXO V (Puro) - com partilha adaptada
+  const calcAnexoV = (faturamento) => {
+    let faixaIdx = 0;
+    for(let i=0;i<ANEXO_V.faixas.length;i++){
+      if(rbt12 <= ANEXO_V.faixas[i].lim){faixaIdx=i;break;}
+      if(i===ANEXO_V.faixas.length-1) faixaIdx=i;
+    }
+    const f = ANEXO_V.faixas[faixaIdx];
+    const aliqEfetiva = ((rbt12 * f.aliq/100) - f.vd) / rbt12 * 100;
+    const rep = ANEXO_V.reparticao[faixaIdx];
+    const das = faturamento * aliqEfetiva/100;
+    return {
+      faixaIdx, aliqEfetiva, das,
+      irpj: das * rep.irpj/100,
+      csll: das * rep.csll/100,
+      cbs: das * rep.cbs/100,
+      cpp: das * rep.cpp/100,
+      iss: das * rep.iss/100,
+      ibs: 0
+    };
+  };
+
+  const rowsS=[],rowsH=[],rowsP=[];
+  let totS=0,totH=0,totP=0,totCredH=0,totCredP=0;
+
+  const T={
+    s:{irpj:0,csll:0,cbs:0,cpp:0,iss:0,ibs:0,folha:0,das:0,total:0},
+    h:{irpj:0,csll:0,cbs:0,cpp:0,iss:0,ibs:0,folha:0,das:0,credito:0,total:0,faixaIdx:0,aliqEfetiva:0},
+    p:{irpj:0,adIrpj:0,csll:0,cbs:0,ibsEst:0,ibsMun:0,iss:0,inssPat:0,credito:0,folha:0,total:0}
+  };
+
+  fat.forEach((f,i)=>{
+    const cred=creditoMensal[i].total;
+
+    // REGIME 1: ANEXO V
+    const v = calcAnexoV(f);
+    const custoS = folhaBase + v.das;
+    T.s.irpj+=v.irpj;T.s.csll+=v.csll;T.s.cbs+=v.cbs;T.s.cpp+=v.cpp;T.s.iss+=v.iss;T.s.ibs+=v.ibs;
+    T.s.folha+=folhaBase;T.s.das+=v.das;T.s.total+=custoS;
+    rowsS.push({mes:meses[i],fat:f,folha:folhaBase,...v,total:custoS});
+    totS+=custoS;
+
+    // REGIME 2: ANEXO III (Híbrido)
+    const h = calcAnexoIII(f);
+    const custoH = folhaBase + h.das - cred;
+    T.h.irpj+=h.irpj;T.h.csll+=h.csll;T.h.cbs+=h.cbs;T.h.cpp+=h.cpp;T.h.iss+=h.iss;T.h.ibs+=h.ibs;
+    T.h.folha+=folhaBase;T.h.das+=h.das;T.h.credito+=cred;T.h.total+=custoH;
+    T.h.faixaIdx=h.faixaIdx;T.h.aliqEfetiva=h.aliqEfetiva;
+    rowsH.push({mes:meses[i],fat:f,folha:folhaBase,...h,credito:cred,total:custoH});
+    totH+=custoH;totCredH+=cred;
+
+    // REGIME 3: LUCRO PRESUMIDO
+    const p_irpj=f*0.32*0.15;
+    const baseIrpj=f*0.32;
+    const p_adIrpj=baseIrpj>20000?(baseIrpj-20000)*0.10:0;
+    const p_csll=f*0.32*0.09;
+    const p_cbs=f*0.097;
+    const p_ibsEst=f*0.0005;
+    const p_ibsMun=f*0.0005;
+    const p_iss=f*0.05;
+    const p_inssPat=folhaBase*inssPat;
+    const custoP = folhaBase+p_inssPat+p_irpj+p_adIrpj+p_csll+p_cbs+p_ibsEst+p_ibsMun+p_iss-cred;
+    T.p.irpj+=p_irpj;T.p.adIrpj+=p_adIrpj;T.p.csll+=p_csll;T.p.cbs+=p_cbs;T.p.ibsEst+=p_ibsEst;T.p.ibsMun+=p_ibsMun;
+    T.p.iss+=p_iss;T.p.inssPat+=p_inssPat;T.p.credito+=cred;T.p.folha+=folhaBase;T.p.total+=custoP;
+    rowsP.push({mes:meses[i],fat:f,folha:folhaBase,irpj:p_irpj,adIrpj:p_adIrpj,csll:p_csll,cbs:p_cbs,ibsEst:p_ibsEst,ibsMun:p_ibsMun,iss:p_iss,inssPat:p_inssPat,credito:cred,total:custoP});
+    totP+=custoP;totCredP+=cred;
+  });
+
+  const totalFat=fat.reduce((a,b)=>a+b,0);
+  const winner=Math.min(totS,totH,totP);
+
+  // === CARDS ===
+  document.getElementById('cards').innerHTML=`
+    <div class="card simples">
+      ${totS===winner?'<span class="badge winner">🏆 MELHOR</span>':'<span class="badge nocredit">SEM CRÉDITO</span>'}
+      <h3>Simples Puro (Anexo V)</h3>
+      <div class="total">${fmt(totS)}</div>
+      <div class="detail">Carga efetiva: ${pct(totS/totalFat)}</div>
+      <div class="detail">DAS: ${fmt(T.s.das)} | Folha: ${fmt(T.s.folha)}</div>
+      <div class="credit">⚠️ Sem créditos CBS/IBS · Faixa ${rowsS[0].faixaIdx+1}ª</div>
+    </div>
+    <div class="card hibrido">
+      ${totH===winner?'<span class="badge winner">🏆 MELHOR</span>':''}
+      <h3>Simples Híbrido (Anexo III)</h3>
+      <div class="total">${fmt(totH)}</div>
+      <div class="detail">Carga efetiva: ${pct(totH/totalFat)}</div>
+      <div class="detail">DAS: ${fmt(T.h.das)} (${pct2(T.h.aliqEfetiva)} ef.) | Folha: ${fmt(T.h.folha)}</div>
+      <div class="credit">✅ Crédito CBS/IBS: ${fmt(totCredH)} · Faixa ${T.h.faixaIdx+1}ª</div>
+    </div>
+    <div class="card presumido">
+      ${totP===winner?'<span class="badge winner">🏆 MELHOR</span>':''}
+      <h3>Lucro Presumido</h3>
+      <div class="total">${fmt(totP)}</div>
+      <div class="detail">Carga efetiva: ${pct(totP/totalFat)}</div>
+      <div class="detail">IRPJ+CSLL: ${fmt(T.p.irpj+T.p.adIrpj+T.p.csll)} | CBS+IBS+ISS: ${fmt(T.p.cbs+T.p.ibsEst+T.p.ibsMun+T.p.iss)}</div>
+      <div class="credit">✅ Crédito CBS/IBS: ${fmt(totCredP)}</div>
+    </div>
+  `;
+
+  // === TABELA PARTILHA OFICIAL ===
+  let hP=`<table class="table-partilha"><thead><tr>
+    <th>Faixa</th><th>Receita 12m</th><th>Alíq. Nominal</th><th>Alíq. Efetiva</th><th>IRPJ</th><th>CSLL</th><th>CBS</th><th>CPP</th><th>ISS</th><th>IBS</th>
+  </tr></thead><tbody>`;
+  dadosAno.faixas.forEach((f,i)=>{
+    const r = dadosAno.reparticao[i];
+    const aliqEf = ((rbt12 * f.aliq/100) - f.vd) / rbt12 * 100;
+    const ehFaixaAtual = i === T.h.faixaIdx;
+    hP+=`<tr class="${ehFaixaAtual?'faixa-row':''}">
+      <td><strong>${i+1}ª Faixa</strong> ${ehFaixaAtual?'⭐':''}</td>
+      <td>${fmt(f.lim)}</td>
+      <td>${pct2(f.aliq)}</td>
+      <td>${pct2(aliqEf)}</td>
+      <td>${pct2(r.irpj)}</td>
+      <td>${pct2(r.csll)}</td>
+      <td>${pct2(r.cbs)}</td>
+      <td>${pct2(r.cpp)}</td>
+      <td>${pct2(r.iss)}${i===4?' (máx '+dadosAno.issMax+'%)':''}</td>
+      <td>${pct2(r.ibs)}</td>
+    </tr>`;
+  });
+  hP+=`</tbody></table>`;
+  hP+=`<div class="info-box-blue" style="margin-top:10px"><strong>⭐ Faixa atual da empresa:</strong> ${T.h.faixaIdx+1}ª Faixa · Alíquota efetiva: ${pct2(T.h.aliqEfetiva)} · RBT12 projetado: ${fmt(rbt12)}</div>`;
+  document.getElementById('tabelaPartilha').innerHTML=hP;
+
+  // === TABELA ANEXO V ===
+  let hS=`<table class="table-simples"><thead><tr>
+    <th>Mês</th><th>Faturamento</th><th>Folha</th><th>IRPJ</th><th>CSLL</th><th>CBS</th><th>CPP</th><th>ISS</th><th>Total DAS</th><th>Custo Total</th>
+  </tr></thead><tbody>`;
+  rowsS.forEach(r=>{hS+=`<tr><td>${r.mes}</td><td>${fmt(r.fat)}</td><td>${fmt(r.folha)}</td><td>${fmt(r.irpj)}</td><td>${fmt(r.csll)}</td><td>${fmt(r.cbs)}</td><td>${fmt(r.cpp)}</td><td>${fmt(r.iss)}</td><td>${fmt(r.das)}</td><td><strong>${fmt(r.total)}</strong></td></tr>`});
+  hS+=`<tr class="total-row"><td>TOTAL</td><td>${fmt(totalFat)}</td><td>${fmt(T.s.folha)}</td><td>${fmt(T.s.irpj)}</td><td>${fmt(T.s.csll)}</td><td>${fmt(T.s.cbs)}</td><td>${fmt(T.s.cpp)}</td><td>${fmt(T.s.iss)}</td><td>${fmt(T.s.das)}</td><td><strong>${fmt(T.s.total)}</strong></td></tr>`;
+  hS+=`<tr class="subtotal-row"><td colspan="2">% s/ faturamento</td><td>-</td><td>${pct(T.s.irpj/totalFat)}</td><td>${pct(T.s.csll/totalFat)}</td><td>${pct(T.s.cbs/totalFat)}</td><td>${pct(T.s.cpp/totalFat)}</td><td>${pct(T.s.iss/totalFat)}</td><td>${pct(T.s.das/totalFat)}</td><td>${pct(T.s.total/totalFat)}</td></tr></tbody></table>`;
+  document.getElementById('tabelaSimples').innerHTML=hS;
+
+  // === TABELA ANEXO III (HÍBRIDO) ===
+  let hH=`<table class="table-hibrido"><thead><tr>
+    <th>Mês</th><th>Faturamento</th><th>Folha</th><th>IRPJ</th><th>CSLL</th><th>CBS</th><th>CPP</th><th>ISS</th><th>IBS</th><th>Total DAS</th><th>(-) Crédito</th><th>Custo Total</th>
+  </tr></thead><tbody>`;
+  rowsH.forEach(r=>{hH+=`<tr><td>${r.mes}</td><td>${fmt(r.fat)}</td><td>${fmt(r.folha)}</td><td>${fmt(r.irpj)}</td><td>${fmt(r.csll)}</td><td>${fmt(r.cbs)}</td><td>${fmt(r.cpp)}</td><td>${fmt(r.iss)}</td><td>${fmt(r.ibs)}</td><td>${fmt(r.das)}</td><td class="highlight">-${fmt(r.credito)}</td><td><strong>${fmt(r.total)}</strong></td></tr>`});
+  hH+=`<tr class="total-row"><td>TOTAL</td><td>${fmt(totalFat)}</td><td>${fmt(T.h.folha)}</td><td>${fmt(T.h.irpj)}</td><td>${fmt(T.h.csll)}</td><td>${fmt(T.h.cbs)}</td><td>${fmt(T.h.cpp)}</td><td>${fmt(T.h.iss)}</td><td>${fmt(T.h.ibs)}</td><td>${fmt(T.h.das)}</td><td class="highlight">-${fmt(totCredH)}</td><td><strong>${fmt(T.h.total)}</strong></td></tr>`;
+  hH+=`<tr class="subtotal-row"><td colspan="2">% s/ faturamento</td><td>-</td><td>${pct(T.h.irpj/totalFat)}</td><td>${pct(T.h.csll/totalFat)}</td><td>${pct(T.h.cbs/totalFat)}</td><td>${pct(T.h.cpp/totalFat)}</td><td>${pct(T.h.iss/totalFat)}</td><td>${pct(T.h.ibs/totalFat)}</td><td>${pct(T.h.das/totalFat)}</td><td class="highlight">-${pct(totCredH/totalFat)}</td><td>${pct(T.h.total/totalFat)}</td></tr></tbody></table>`;
+  document.getElementById('tabelaHibrido').innerHTML=hH;
+
+  // === TABELA LUCRO PRESUMIDO ===
+  let hLP=`<table class="table-presumido"><thead><tr>
+    <th>Mês</th><th>Faturamento</th><th>Folha</th><th>IRPJ 15%</th><th>Adic. IRPJ</th><th>CSLL 9%</th><th>CBS 9,7%</th><th>IBS Est.</th><th>IBS Mun.</th><th>ISS 5%</th><th>INSS Patr.</th><th>(-) Crédito</th><th>Custo Total</th>
+  </tr></thead><tbody>`;
+  rowsP.forEach(r=>{hLP+=`<tr><td>${r.mes}</td><td>${fmt(r.fat)}</td><td>${fmt(r.folha)}</td><td>${fmt(r.irpj)}</td><td>${fmt(r.adIrpj)}</td><td>${fmt(r.csll)}</td><td>${fmt(r.cbs)}</td><td>${fmt(r.ibsEst)}</td><td>${fmt(r.ibsMun)}</td><td>${fmt(r.iss)}</td><td>${fmt(r.inssPat)}</td><td class="highlight">-${fmt(r.credito)}</td><td><strong>${fmt(r.total)}</strong></td></tr>`});
+  hLP+=`<tr class="total-row"><td>TOTAL</td><td>${fmt(totalFat)}</td><td>${fmt(T.p.folha)}</td><td>${fmt(T.p.irpj)}</td><td>${fmt(T.p.adIrpj)}</td><td>${fmt(T.p.csll)}</td><td>${fmt(T.p.cbs)}</td><td>${fmt(T.p.ibsEst)}</td><td>${fmt(T.p.ibsMun)}</td><td>${fmt(T.p.iss)}</td><td>${fmt(T.p.inssPat)}</td><td class="highlight">-${fmt(totCredP)}</td><td><strong>${fmt(T.p.total)}</strong></td></tr>`;
+  hLP+=`<tr class="subtotal-row"><td colspan="2">% s/ faturamento</td><td>-</td><td>${pct(T.p.irpj/totalFat)}</td><td>${pct(T.p.adIrpj/totalFat)}</td><td>${pct(T.p.csll/totalFat)}</td><td>${pct(T.p.cbs/totalFat)}</td><td>${pct(T.p.ibsEst/totalFat)}</td><td>${pct(T.p.ibsMun/totalFat)}</td><td>${pct(T.p.iss/totalFat)}</td><td>${pct(T.p.inssPat/totalFat)}</td><td class="highlight">-${pct(totCredP/totalFat)}</td><td>${pct(T.p.total/totalFat)}</td></tr></tbody></table>`;
+  document.getElementById('tabelaPresumido').innerHTML=hLP;
+
+  // === TABELA CRÉDITOS ===
+  let hC=`<table class="table-creditos"><thead><tr>
+    <th>Mês</th><th>Compras RR</th><th>Créd. RR</th><th>Compras SN</th><th>Créd. SN</th><th>Desp. RR</th><th>Créd. RR</th><th>Desp. SN</th><th>Créd. SN</th><th>Total Crédito</th>
+  </tr></thead><tbody>`;
+  let tCRR=0,tCSN=0,tDRR=0,tDSN=0;
+  for(let i=0;i<3;i++){
+    tCRR+=comprasRR[i];tCSN+=comprasSN[i];tDRR+=despesasRR[i];tDSN+=despesasSN[i];
+    hC+=`<tr><td><strong>${meses[i]}</strong></td><td>${fmt(comprasRR[i])}</td><td class="highlight">${fmt(creditoMensal[i].comprasRR)}</td><td>${fmt(comprasSN[i])}</td><td class="highlight">${fmt(creditoMensal[i].comprasSN)}</td><td>${fmt(despesasRR[i])}</td><td class="highlight">${fmt(creditoMensal[i].despesasRR)}</td><td>${fmt(despesasSN[i])}</td><td class="highlight">${fmt(creditoMensal[i].despesasSN)}</td><td class="highlight"><strong>${fmt(creditoMensal[i].total)}</strong></td></tr>`;
+  }
+  hC+=`<tr class="total-row"><td>TOTAL</td><td>${fmt(tCRR)}</td><td class="highlight">${fmt(creditoMensal.reduce((a,c)=>a+c.comprasRR,0))}</td><td>${fmt(tCSN)}</td><td class="highlight">${fmt(creditoMensal.reduce((a,c)=>a+c.comprasSN,0))}</td><td>${fmt(tDRR)}</td><td class="highlight">${fmt(creditoMensal.reduce((a,c)=>a+c.despesasRR,0))}</td><td>${fmt(tDSN)}</td><td class="highlight">${fmt(creditoMensal.reduce((a,c)=>a+c.despesasSN,0))}</td><td class="highlight"><strong>${fmt(creditoTotalTrimestre)}</strong></td></tr></tbody></table>`;
+  hC+=`<div class="info-box" style="margin-top:10px"><strong>📐 Fórmula:</strong> <code>Valor Líquido = Bruto ÷ (1 + alíq. ICMS)</code> → <code>Crédito CBS/IBS = Líquido × alíq. ICMS</code></div>`;
+  document.getElementById('tabelaCreditos').innerHTML=hC;
+
+  // === TABELA COMPARATIVA ===
+  const lpImpostos=T.p.irpj+T.p.adIrpj+T.p.csll+T.p.cbs+T.p.ibsEst+T.p.ibsMun+T.p.iss+T.p.inssPat;
+  document.getElementById('tabelaComparativo').innerHTML=`
+    <table class="table-comparativo"><thead><tr>
+      <th>Componente</th><th style="background:#11998e">Simples Puro (Anexo V)</th><th style="background:#f7971e;color:#333">Simples Híbrido (Anexo III)</th><th style="background:#ee0979">Lucro Presumido</th>
+    </tr></thead><tbody>
+      <tr><td>Folha de Pagamento</td><td>${fmt(T.s.folha)}</td><td>${fmt(T.h.folha)}</td><td>${fmt(T.p.folha)}</td></tr>
+      <tr><td>IRPJ</td><td>${fmt(T.s.irpj)}</td><td>${fmt(T.h.irpj)}</td><td>${fmt(T.p.irpj)}</td></tr>
+      <tr><td>Adicional IRPJ</td><td>-</td><td>-</td><td>${fmt(T.p.adIrpj)}</td></tr>
+      <tr><td>CSLL</td><td>${fmt(T.s.csll)}</td><td>${fmt(T.h.csll)}</td><td>${fmt(T.p.csll)}</td></tr>
+      <tr><td><strong>CBS (substitui PIS/COFINS)</strong></td><td>${fmt(T.s.cbs)}</td><td>${fmt(T.h.cbs)}</td><td>${fmt(T.p.cbs)}</td></tr>
+      <tr><td>CPP (INSS Patronal via DAS)</td><td>${fmt(T.s.cpp)}</td><td>${fmt(T.h.cpp)}</td><td>-</td></tr>
+      <tr><td>ISS (via DAS ou por fora)</td><td>${fmt(T.s.iss)}</td><td>${fmt(T.h.iss)}</td><td>${fmt(T.p.iss)}</td></tr>
+      <tr><td><strong>IBS (via DAS)</strong></td><td>${fmt(T.s.ibs)}</td><td>${fmt(T.h.ibs)}</td><td>-</td></tr>
+      <tr><td>IBS Estadual (por fora)</td><td>-</td><td>-</td><td>${fmt(T.p.ibsEst)}</td></tr>
+      <tr><td>IBS Municipal (por fora)</td><td>-</td><td>-</td><td>${fmt(T.p.ibsMun)}</td></tr>
+      <tr><td>INSS Patronal 20% (fora)</td><td>-</td><td>-</td><td>${fmt(T.p.inssPat)}</td></tr>
+      <tr><td><strong>Subtotal Impostos</strong></td><td><strong>${fmt(T.s.das)}</strong></td><td><strong>${fmt(T.h.das)}</strong></td><td><strong>${fmt(lpImpostos)}</strong></td></tr>
+      <tr><td class="highlight">(-) Créditos CBS/IBS</td><td>-</td><td class="highlight">-${fmt(totCredH)}</td><td class="highlight">-${fmt(totCredP)}</td></tr>
+      <tr class="total-row"><td><strong>CUSTO TOTAL TRIMESTRAL</strong></td><td><strong>${fmt(totS)}</strong></td><td><strong>${fmt(totH)}</strong></td><td><strong>${fmt(totP)}</strong></td></tr>
+      <tr class="subtotal-row"><td>Carga Efetiva</td><td>${pct(totS/totalFat)}</td><td>${pct(totH/totalFat)}</td><td>${pct(totP/totalFat)}</td></tr>
+    </tbody></table>`;
+
+  // === WINNER ===
+  let nW,dW,cW;
+  if(winner===totS){nW='Simples Nacional Puro (Anexo V)';dW=Math.min(totP,totH)-totS;cW='#11998e'}
+  else if(winner===totH){nW='Simples Híbrido (Anexo III)';dW=Math.min(totS,totP)-totH;cW='#f7971e'}
+  else{nW='Lucro Presumido';dW=Math.min(totS,totH)-totP;cW='#ee0979'}
+  document.getElementById('winner').innerHTML=`<div class="winner-box" style="background:linear-gradient(135deg,${cW},${cW}cc)"><h2>🏆 Opção Mais Econômica: ${nW}</h2><p>Economia de ${fmt(dW)} no trimestre em relação à 2ª melhor opção</p><p style="margin-top:7px;font-size:.88rem">Créditos CBS/IBS aproveitados: ${fmt(creditoTotalTrimestre)}</p></div>`;
+
+  // === ANÁLISE ===
+  let a=`<strong>📌 Análise Detalhada (${dadosAno.label}):</strong><br><br>`;
+  a+=`<strong>🔄 Cenário ${dadosAno.label}:</strong><br>`;
+  a+=`• <strong>CBS</strong> substitui PIS/COFINS (alíquota 9,7% no LP, partilhada no SN)<br>`;
+  a+=`• <strong>ISS máximo:</strong> ${dadosAno.issMax}% (reduzindo gradualmente até 3% em 2032)<br>`;
+  a+=`• <strong>IBS:</strong> ${dadosAno.desc.split('·')[1].trim()} (aumentando gradualmente)<br>`;
+  a+=`• <strong>RBT12 projetado:</strong> ${fmt(rbt12)} → ${T.h.faixaIdx+1}ª Faixa do Anexo III<br><br>`;
+  a+=`<strong>💰 Créditos CBS/IBS:</strong> Total trimestral de <strong>${fmt(creditoTotalTrimestre)}</strong>, compensando o débito no Anexo III e LP.<br><br>`;
+  a+=`<strong>📅 Evolução Mensal:</strong><br>`;
+  for(let i=0;i<3;i++){a+=`• <strong>${meses[i]}:</strong> Anexo V ${fmt(rowsS[i].total)} | Anexo III ${fmt(rowsH[i].total)} | LP ${fmt(rowsP[i].total)} (crédito: ${fmt(creditoMensal[i].total)})<br>`}
+  a+=`<br>`;
+  if(winner===totS){a+=`✅ O <strong>Anexo V</strong> é mais vantajoso. Mesmo sem créditos, a alíquota efetiva do Anexo V compensa para este perfil.`}
+  else if(winner===totH){a+=`✅ O <strong>Anexo III (Híbrido)</strong> é mais vantajoso! Alíquota efetiva de ${pct2(T.h.aliqEfetiva)} + créditos de ${fmt(totCredH)} resultaram no menor custo.`}
+  else{a+=`✅ O <strong>Lucro Presumido</strong> é mais vantajoso! Créditos de ${fmt(totCredP)} compensaram a carga maior.`}
+  document.getElementById('analysis').innerHTML=a;
+
+  document.getElementById('results').classList.add('show');
+  document.getElementById('results').scrollIntoView({behavior:'smooth'});
+}
+
+window.addEventListener('load',()=>{initTimeline();atualizarFatorR();calcular()});
+</script>
+</body>
+</html>
