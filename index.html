@@ -304,7 +304,7 @@
     /* Regime Cards Grid */
     .cards-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 16px;
       margin-bottom: 24px;
     }
@@ -462,7 +462,7 @@
       .tab-content { display: block !important; page-break-after: auto; }
       .table-container { box-shadow: none !important; border: 1px solid #ccc !important; margin-bottom: 14px !important; }
       .regime-card { border: 1px solid #ccc !important; box-shadow: none !important; }
-      .cards-grid { grid-template-columns: repeat(4, 1fr) !important; gap: 8px !important; }
+      .cards-grid { grid-template-columns: repeat(5, 1fr) !important; gap: 8px !important; }
       .charts-grid { display: none !important; }
       h1 { font-size: 1.3rem !important; }
       th, td { padding: 6px 8px !important; }
@@ -619,7 +619,8 @@
         <div class="input-grid-2">
           <div class="input-group">
             <label>Alíquota Crédito Reg. Regular (%)</label>
-            <div class="input-wrapper"><input type="number" id="aliqCredRR" value="20" step="0.5"></div>
+            <div class="input-wrapper"><input type="number" id="aliqCredRR" value="26.5" step="0.5"></div>
+            <small style="font-size:0.72rem;color:var(--text-muted);">Padrão = IVA cheio (CBS+IBS)</small>
           </div>
           <div class="input-group">
             <label>Alíquota Crédito Simples (%)</label>
@@ -1106,7 +1107,9 @@ const ANEXO_V = {
     { lim: 3600000, aliq: 21.50, vd: 35460 },
     { lim: 4800000, aliq: 23.00, vd: 89460 }
   ],
-  reparticao: [
+  // Repartição base (2027): ISS cheio 17,20%. Nos anos seguintes o ISS é
+  // progressivamente convertido em IBS, mantendo ISS+IBS = 17,20%.
+  reparticaoBase: [
     { irpj: 17.50, csll: 13.50, cbs: 38.30, cpp: 13.50, iss: 17.20, ibs: 0 },
     { irpj: 17.50, csll: 13.50, cbs: 38.30, cpp: 13.50, iss: 17.20, ibs: 0 },
     { irpj: 17.50, csll: 13.50, cbs: 38.30, cpp: 13.50, iss: 17.20, ibs: 0 },
@@ -1115,6 +1118,21 @@ const ANEXO_V = {
     { irpj: 35.00, csll: 15.00, cbs: 19.50, cpp: 30.50, iss: 0, ibs: 0 }
   ]
 };
+
+// Retorna a repartição do Anexo V já com a transição ISS -> IBS do ano selecionado.
+// Sem redução de alíquota (TI/Software = alíquota cheia).
+function getReparticaoV() {
+  let percISS = 1.0, percIBS = 0.0;
+  if (anoSelecionado === 2029) { percISS = 0.90; percIBS = 0.10; }
+  else if (anoSelecionado === 2030) { percISS = 0.80; percIBS = 0.20; }
+  else if (anoSelecionado === 2031) { percISS = 0.70; percIBS = 0.30; }
+  else if (anoSelecionado === 2032) { percISS = 0.60; percIBS = 0.40; }
+  return ANEXO_V.reparticaoBase.map((r) => {
+    if (r.iss === 0 && r.ibs === 0) return { ...r };
+    const baseISS_IBS = r.iss + r.ibs; // 17,20%
+    return { ...r, iss: baseISS_IBS * percISS, ibs: baseISS_IBS * percIBS };
+  });
+}
 
 let anoSelecionado = 2027;
 let chartCustosInstance = null;
@@ -1265,7 +1283,7 @@ function restaurarPadroes() {
   document.getElementById('despSN1').value = '0,00';
   document.getElementById('despSN2').value = '0,00';
   document.getElementById('despSN3').value = '0,00';
-  document.getElementById('aliqCredRR').value = '20';
+  document.getElementById('aliqCredRR').value = '26.5';
   document.getElementById('aliqCredSN').value = '2';
   document.getElementById('aliqCBS').value = '8.80';
   document.getElementById('aliqIBS').value = '17.70';
@@ -1378,7 +1396,7 @@ function executarSimulacao() {
     parseMoney(document.getElementById('despSN2').value),
     parseMoney(document.getElementById('despSN3').value)
   ];
-  const aliqCredRR = (parseFloat(document.getElementById('aliqCredRR').value) || 20) / 100;
+  const aliqCredRR = (parseFloat(document.getElementById('aliqCredRR').value) || 26.5) / 100;
   const aliqCredSN = (parseFloat(document.getElementById('aliqCredSN').value) || 2) / 100;
 
   // 4. Ler Alíquotas Editáveis da Reforma Tributária (Customizáveis)
@@ -1425,9 +1443,9 @@ function executarSimulacao() {
   const folhaNecessaria12 = rbt12 * 0.28;
   const faltaFolha = Math.max(0, folhaNecessaria12 - folha12);
 
-  // 7. Apuração dos Regimes
+  // 7. Apuração dos Regimes (sem redução de IBS/CBS para TI/Software)
   const faixaIII = calcularSimplesFaixa(rbt12, dadosAno.faixasIII, dadosAno.reparticaoIII);
-  const faixaV = calcularSimplesFaixa(rbt12, ANEXO_V.faixas, ANEXO_V.reparticao);
+  const faixaV = calcularSimplesFaixa(rbt12, ANEXO_V.faixas, getReparticaoV());
 
   const meses = ['Mês 1', 'Mês 2', 'Mês 3'];
 
@@ -1435,6 +1453,7 @@ function executarSimulacao() {
   const res = {
     meses,
     totalFat,
+    rbt12,
     totalCreditos,
     aliqCBS_ref,
     aliqIBS_ref,
@@ -1633,7 +1652,11 @@ function renderizarResultados() {
   const segundo = opcoes[1];
   const economia = segundo.total - campeao.total;
 
-  // 2. Banner do Vencedor
+  // 2. Banner do Vencedor + alerta de teto do Simples Nacional
+  document.querySelectorAll('.alerta-teto-simples').forEach((el) => el.remove());
+  const alertaTeto = res.rbt12 > 4800000
+    ? `<div class="alert-box alert-amber alerta-teto-simples" style="margin-bottom:12px;"><i class="fa-solid fa-triangle-exclamation"></i><div><strong>RBT12 acima de R$ 4,8M:</strong> empresa excluída do Simples Nacional (LC 123/2006). Valores de Anexo III/V/Híbrido exibidos apenas como referência.</div></div>`
+    : ``;
   document.getElementById('winnerBanner').innerHTML = `
     <div class="winner-info">
       <h2><i class="fa-solid fa-crown"></i> Melhor Opção: ${campeao.nome}</h2>
@@ -1644,8 +1667,9 @@ function renderizarResultados() {
       <div class="lbl">Economia vs 2ª Melhor Opção</div>
     </div>
   `;
+  document.getElementById('winnerBanner').insertAdjacentHTML('beforebegin', alertaTeto);
 
-  // 3. Renderizar os 4 Cards Principais (+ Híbrido)
+  // 3. Renderizar os 5 Cards Principais (incluindo Híbrido)
   const renderCard = (id, nome, cor, icon, total, impostos, badge, subtext) => `
     <div class="regime-card ${campeao.id === id ? 'is-winner' : ''}">
       <span class="card-badge ${campeao.id === id ? 'badge-win' : 'badge-gray'}">${campeao.id === id ? '🏆 Mais Econômico' : badge}</span>
@@ -1663,6 +1687,7 @@ function renderizarResultados() {
   document.getElementById('cardsGrid').innerHTML = [
     renderCard('v', 'Simples Anexo V', '#059669', 'fa-solid fa-file-lines', res.simplesV.total, res.simplesV.das, 'Sem Fator R', `Alíq. Efetiva: ${formatPct(res.simplesV.aliqEfetiva)}`),
     renderCard('iii', 'Simples Anexo III', '#2563eb', 'fa-solid fa-award', res.simplesIII.total, res.simplesIII.das, qualificaAnexoIII ? 'Fator R OK' : 'Exige Folha', `Alíq. Efetiva: ${formatPct(res.simplesIII.aliqEfetiva)}`),
+    renderCard('hib', 'Simples Híbrido', '#f59e0b', 'fa-solid fa-layer-group', res.simplesHibrido.total, res.simplesHibrido.total - res.folhaBaseTrimestral, 'CBS/IBS fora', `DAS Fed: ${formatBRL(res.simplesHibrido.dasFederal)}`),
     renderCard('p', 'Lucro Presumido', '#e11d48', 'fa-solid fa-chart-pie', res.presumido.total, res.presumido.totalImpostos, 'Presunção 32%', `IRPJ/CSLL: ${formatBRL(res.presumido.irpj + res.presumido.adIrpj + res.presumido.csll)}`),
     renderCard('r', 'Lucro Real', '#7c3aed', 'fa-solid fa-building-circle-check', res.real.total, res.real.totalImpostos, 'Base Contábil', `Base Real: ${formatBRL(res.real.baseTotal)}`)
   ].join('');
@@ -1792,8 +1817,9 @@ function renderizarResultados() {
     </tr>
   `).join('');
 
-  // 10. Tabela de Competitividade B2B
-  const b2bAliqGeral = res.aliqCBS_ref + res.aliqIBS_ref;
+  // 10. Tabela de Competitividade B2B (alíquota aplicada no ano + referência plena pós-reforma)
+  const b2bAliqPlena = res.aliqCBS_ref + res.aliqIBS_ref;
+  const b2bAliqAplicada = (res.aliqCBS + res.aliqIBS) * 100;
   document.getElementById('corpoTabelaB2B').innerHTML = `
     <tr>
       <td><strong>Simples Nacional Comum (Anexo III ou V)</strong></td>
@@ -1803,20 +1829,20 @@ function renderizarResultados() {
     </tr>
     <tr class="row-total">
       <td><strong>Lucro Real</strong></td>
-      <td><strong>${formatPct(b2bAliqGeral)} (Alíquota Plena IBS+CBS)</strong></td>
-      <td class="highlight-green"><strong>${formatBRL(res.totalFat * (b2bAliqGeral / 100))}</strong></td>
+      <td><strong>${formatPct(b2bAliqAplicada)}</strong> aplicada em ${dadosAno.label} (plena: ${formatPct(b2bAliqPlena)} pós-reforma)</td>
+      <td class="highlight-green"><strong>${formatBRL(res.totalFat * (b2bAliqAplicada / 100))}</strong></td>
       <td><span class="card-badge badge-win">Máxima (Cliente recupera 100% dos créditos)</span></td>
     </tr>
     <tr class="row-total">
       <td><strong>Lucro Presumido</strong></td>
-      <td><strong>${formatPct(b2bAliqGeral)} (Alíquota Plena IBS+CBS)</strong></td>
-      <td class="highlight-green"><strong>${formatBRL(res.totalFat * (b2bAliqGeral / 100))}</strong></td>
+      <td><strong>${formatPct(b2bAliqAplicada)}</strong> aplicada em ${dadosAno.label} (plena: ${formatPct(b2bAliqPlena)} pós-reforma)</td>
+      <td class="highlight-green"><strong>${formatBRL(res.totalFat * (b2bAliqAplicada / 100))}</strong></td>
       <td><span class="card-badge badge-win">Máxima (Cliente recupera 100% dos créditos)</span></td>
     </tr>
     <tr class="row-total">
       <td><strong>Simples Híbrido (CBS/IBS Fora do DAS)</strong></td>
-      <td><strong>${formatPct(b2bAliqGeral)} (Alíquota Plena IBS+CBS)</strong></td>
-      <td class="highlight-green"><strong>${formatBRL(res.totalFat * (b2bAliqGeral / 100))}</strong></td>
+      <td><strong>${formatPct(b2bAliqAplicada)}</strong> aplicada em ${dadosAno.label} (plena: ${formatPct(b2bAliqPlena)} pós-reforma)</td>
+      <td class="highlight-green"><strong>${formatBRL(res.totalFat * (b2bAliqAplicada / 100))}</strong></td>
       <td><span class="card-badge badge-win">Máxima (Permite competir de igual para igual)</span></td>
     </tr>
   `;
@@ -1825,7 +1851,7 @@ function renderizarResultados() {
   document.getElementById('corpoTabelaCreditosTomados').innerHTML = res.meses.map((m, i) => {
     const dRR = parseMoney(document.getElementById('despRR' + (i + 1)).value);
     const dSN = parseMoney(document.getElementById('despSN' + (i + 1)).value);
-    const cRR = dRR * ((parseFloat(document.getElementById('aliqCredRR').value) || 20) / 100);
+    const cRR = dRR * ((parseFloat(document.getElementById('aliqCredRR').value) || 26.5) / 100);
     const cSN = dSN * ((parseFloat(document.getElementById('aliqCredSN').value) || 2) / 100);
     return `
       <tr>
